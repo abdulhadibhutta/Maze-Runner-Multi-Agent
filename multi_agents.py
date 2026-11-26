@@ -171,68 +171,169 @@ class MultiAgentSearchAgent(Agent):
 # Q2: Minimax
 # ----------------------------------------------------------------------
 class MinimaxAgent(MultiAgentSearchAgent):
-    """
-    Q2: Thomas maximises, every Griever minimises.
-    """
 
     def getAction(self, gameState):
-        """
-        Returns the minimax action from gameState, searching self.depth plies
-        and evaluating the states at the bottom with self.evaluationFunction.
+        numAgents = gameState.getNumAgents()
 
-        Useful methods:
-            gameState.getLegalActions(agentIndex)
-            gameState.generateSuccessor(agentIndex, action)
-            gameState.getNumAgents()
-            gameState.isWin(), gameState.isLose()
+        def getValue(state, agentIndex, currentDepth):
+            if state.isWin() or state.isLose() or currentDepth == self.depth:
+                return self.evaluationFunction(state)
 
-        Hint: a recursive helper value(state, agentIndex, depth) is the most
-        natural way to write this. Work out which agent moves next, and when
-        the depth goes up.
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+            nextAgent = (agentIndex + 1) % numAgents
+            nextDepth = currentDepth + 1 if nextAgent == 0 else currentDepth
+            legalActions = state.getLegalActions(agentIndex)
 
+            if agentIndex == 0:
+                maxVal = float('-inf')
+                for action in legalActions:
+                    successor = state.generateSuccessor(agentIndex, action)
+                    val = getValue(successor, nextAgent, nextDepth)
+                    if val > maxVal:
+                        maxVal = val
+                return maxVal
+            else:
+                minVal = float('inf')
+                for action in legalActions:
+                    successor = state.generateSuccessor(agentIndex, action)
+                    val = getValue(successor, nextAgent, nextDepth)
+                    if val < minVal:
+                        minVal = val
+                return minVal
+
+        bestScore = float('-inf')
+        bestAction = STOP
+        nextAgent = 1 % numAgents
+        nextDepth = 1 if nextAgent == 0 else 0
+
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            val = getValue(successor, nextAgent, nextDepth)
+            if val > bestScore:
+                bestScore = val
+                bestAction = action
+
+        return bestAction
 
 # ----------------------------------------------------------------------
 # Q3: Alpha-beta pruning
 # ----------------------------------------------------------------------
 class AlphaBetaAgent(MultiAgentSearchAgent):
-    """
-    Q3: minimax with alpha-beta pruning.
-    """
 
     def getAction(self, gameState):
-        """
-        Returns the same action as MinimaxAgent, but skips the parts of the
-        tree that cannot change the decision.
+        numAgents = gameState.getNumAgents()
 
-        Do NOT prune on equality: prune only when a value is STRICTLY better
-        than the bound (v > beta at Thomas's levels, v < alpha at a
-        Griever's levels). Remember to update alpha at the root as well.
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        def maxValue(state, agentIndex, currentDepth, alpha, beta):
+            if state.isWin() or state.isLose() or currentDepth == self.depth:
+                return self.evaluationFunction(state)
 
+            nextAgent = (agentIndex + 1) % numAgents
+            nextDepth = currentDepth + 1 if nextAgent == 0 else currentDepth
+            val = float('-inf')
+
+            for action in state.getLegalActions(agentIndex):
+                successor = state.generateSuccessor(agentIndex, action)
+                if nextAgent == 0:
+                    childVal = maxValue(successor, nextAgent, nextDepth, alpha, beta)
+                else:
+                    childVal = minValue(successor, nextAgent, nextDepth, alpha, beta)
+                if childVal > val:
+                    val = childVal
+                if val > beta:
+                    return val
+                if val > alpha:
+                    alpha = val
+
+            return val
+
+        def minValue(state, agentIndex, currentDepth, alpha, beta):
+            if state.isWin() or state.isLose() or currentDepth == self.depth:
+                return self.evaluationFunction(state)
+
+            nextAgent = (agentIndex + 1) % numAgents
+            nextDepth = currentDepth + 1 if nextAgent == 0 else currentDepth
+            val = float('inf')
+
+            for action in state.getLegalActions(agentIndex):
+                successor = state.generateSuccessor(agentIndex, action)
+                if nextAgent == 0:
+                    childVal = maxValue(successor, nextAgent, nextDepth, alpha, beta)
+                else:
+                    childVal = minValue(successor, nextAgent, nextDepth, alpha, beta)
+                if childVal < val:
+                    val = childVal
+                if val < alpha:
+                    return val
+                if val < beta:
+                    beta = val
+
+            return val
+
+        bestScore = float('-inf')
+        bestAction = STOP
+        alpha = float('-inf')
+        beta = float('inf')
+        nextAgent = 1 % numAgents
+        nextDepth = 1 if nextAgent == 0 else 0
+
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            if nextAgent == 0:
+                val = maxValue(successor, nextAgent, nextDepth, alpha, beta)
+            else:
+                val = minValue(successor, nextAgent, nextDepth, alpha, beta)
+            if val > bestScore:
+                bestScore = val
+                bestAction = action
+            if val > alpha:
+                alpha = val
+
+        return bestAction
 
 # ----------------------------------------------------------------------
 # Q4: Expectimax
 # ----------------------------------------------------------------------
 class ExpectimaxAgent(MultiAgentSearchAgent):
-    """
-    Q4: Thomas maximises; every Griever is a chance node.
-    """
 
     def getAction(self, gameState):
-        """
-        Returns the expectimax action from gameState, searching self.depth
-        plies. Model every Griever as choosing uniformly at random among its
-        legal actions, so a Griever's value is the AVERAGE of its children.
-        """
-        "*** YOUR CODE HERE ***"
-        util.raiseNotDefined()
+        numAgents = gameState.getNumAgents()
 
+        def getValue(state, agentIndex, currentDepth):
+            if state.isWin() or state.isLose() or currentDepth == self.depth:
+                return self.evaluationFunction(state)
 
+            nextAgent = (agentIndex + 1) % numAgents
+            nextDepth = currentDepth + 1 if nextAgent == 0 else currentDepth
+            legalActions = state.getLegalActions(agentIndex)
+
+            if agentIndex == 0:
+                maxVal = float('-inf')
+                for action in legalActions:
+                    successor = state.generateSuccessor(agentIndex, action)
+                    val = getValue(successor, nextAgent, nextDepth)
+                    if val > maxVal:
+                        maxVal = val
+                return maxVal
+            else:
+                totalVal = 0.0
+                for action in legalActions:
+                    successor = state.generateSuccessor(agentIndex, action)
+                    totalVal += getValue(successor, nextAgent, nextDepth)
+                return totalVal / len(legalActions)
+
+        bestScore = float('-inf')
+        bestAction = STOP
+        nextAgent = 1 % numAgents
+        nextDepth = 1 if nextAgent == 0 else 0
+
+        for action in gameState.getLegalActions(0):
+            successor = gameState.generateSuccessor(0, action)
+            val = getValue(successor, nextAgent, nextDepth)
+            if val > bestScore:
+                bestScore = val
+                bestAction = action
+
+        return bestAction
+    
 # ----------------------------------------------------------------------
 # Q5: Evaluation function
 # ----------------------------------------------------------------------
