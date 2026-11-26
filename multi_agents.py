@@ -79,25 +79,70 @@ class ReflexAgent(Agent):
         return legalMoves[chosenIndex]
 
     def evaluationFunction(self, currentGameState, action):
-        """
-        Q1: return a number that is HIGHER for better moves.
-
-        The code below pulls some useful information out of the state that
-        'action' leads to. Things worth thinking about: how far away is the
-        next code piece (or the exit, once it is open)? How close are the
-        Grievers? Is standing still ever a good idea?
-
-        gameState.mazeDistance(pos1, pos2) gives the real distance through
-        the maze, and util.manhattanDistance(pos1, pos2) the straight-line
-        grid distance.
-        """
         successorGameState = currentGameState.generateRunnerSuccessor(action)
+
         newPos = successorGameState.getRunnerPosition()
         newKeys = successorGameState.getKeys()
         newGrieverPositions = successorGameState.getGrieverPositions()
 
-        "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
+        score = successorGameState.getScore()
+
+        if successorGameState.isOver():
+            return score
+
+        oldPos = currentGameState.getRunnerPosition()
+        oldKeys = currentGameState.getKeys()
+
+        # Select a target key and keep it until collected
+        if oldKeys:
+            if not hasattr(self, "targetKey") or self.targetKey not in oldKeys:
+                self.targetKey = min(
+                    oldKeys,
+                    key=lambda key: currentGameState.mazeDistance(oldPos, key)
+                )
+
+            targetKey = self.targetKey
+
+            oldDistance = currentGameState.mazeDistance(
+                oldPos, targetKey
+            )
+
+            newDistance = successorGameState.mazeDistance(
+                newPos, targetKey
+            )
+
+            # Reward progress towards the same target
+            score += 5 * (oldDistance - newDistance)
+
+        # After collecting all keys, move towards the exit
+        else:
+            self.targetKey = None
+
+            exitDistance = successorGameState.mazeDistance(
+                newPos,
+                successorGameState.getExit()
+            )
+
+            score -= 2 * exitDistance
+
+        # Avoid Grievers
+        for grieverPos in newGrieverPositions:
+            distance = successorGameState.mazeDistance(
+                newPos, grieverPos
+            )
+
+            if distance == 1:
+                score -= 100
+            elif distance == 2:
+                score -= 30
+            elif distance == 3:
+                score -= 10
+
+        # Discourage stopping
+        if action == "Stop":
+            score -= 5
+
+        return score
 
 
 def scoreEvaluationFunction(currentGameState):
